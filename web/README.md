@@ -29,7 +29,7 @@ adreslerinden açılır. Aynı origin'den açıldığında CORS devreye girmez.
 | `ADMIN_KEY` | Yönetici paneli için | Yönetici uçlarının anahtarı. **Tanımlı değilse yönetici uçları `503` döner.** |
 | `PORT` | Hayır (varsayılan 3000) | Render bunu otomatik verir |
 
-Anahtar üretmek için:
+Anahtar üretmek için **terminal** (bash / PowerShell):
 
 ```bash
 openssl rand -hex 32
@@ -37,9 +37,26 @@ openssl rand -hex 32
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
+> ⚠️ **Bu komutlar SQL değildir.** Supabase **SQL Editor**'e yapıştırırsanız
+> `ERROR: 42601: syntax error at or near "openssl"` hatası alırsınız; SQL Editor sadece SQL çalıştırır.
+>
+> Elinizde yalnızca SQL Editor varsa (telefon/tablet gibi terminal olmayan ortamlar) anahtarı SQL ile üretin —
+> ek eklenti (`pgcrypto`) gerekmez:
+>
+> ```sql
+> SELECT replace(gen_random_uuid()::text, '-', '')
+>     || replace(gen_random_uuid()::text, '-', '') AS admin_key;
+> ```
+>
+> Dönen 64 karakterlik değeri Render → **Environment** → `ADMIN_KEY` alanına yapıştırın.
+> Bu değeri repoya, koda, ekran görüntüsüne veya sohbete yazmayın.
+
 Anahtarı **koda gömmeyin**; yalnızca Render → Environment (veya yerelde `.env`) üzerinden verin.
 
 ### 1.2 Supabase migration (SQL Editor'de sırayla çalıştırın)
+
+> Aşağıdaki bloklar **SQL'dir**, SQL Editor'e olduğu gibi yapıştırılabilir.
+> `openssl`, `node`, `npm` gibi komutlar ise **terminal** içindir ve SQL Editor'de sözdizimi hatası verir.
 
 ```sql
 -- 1) Kullanıcı puanı
@@ -81,6 +98,7 @@ ALTER TABLE scores
 
 1. Supabase SQL Editor'de yukarıdaki migration'ı çalıştırın (önce `points`, sonra `admin_logs`).
 2. Render → servis → **Environment** → `ADMIN_KEY` ekleyin (güçlü, rastgele, en az 32 karakter).
+   Üretimi için yukarıdaki 1.1 bölümüne bakın (terminal komutu **veya** SQL Editor için `gen_random_uuid()` sorgusu).
 3. Kodu deploy edin (`main`'e merge sonrası otomatik).
 4. `GET /health` → `{"status":"ok","users_table":"ok"}` doğrulayın.
 5. `https://psych-nm.onrender.com/leaderboard.html` ve `/admin.html` adreslerini açın.
