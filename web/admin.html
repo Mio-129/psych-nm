@@ -1,0 +1,1686 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Yönetici Paneli · psych-nm</title>
+<style>
+  :root{
+    --bg:#140d20; --card:#1e142d; --line:#3a2a55; --accent:#7850c8;
+    --gold:#ffd34d; --err:#ff6b6b; --text:#efe9fb; --muted:#a898c9;
+    --ok:#4cd9a0; --warn:#ffb347; --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text); min-height:100vh;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:15px; line-height:1.5; padding:22px 16px 48px; -webkit-text-size-adjust:100%;
+  }
+  body::before{
+    content:""; position:fixed; inset:-25% -20% auto -20%; height:55vh; pointer-events:none; z-index:0;
+    background:radial-gradient(closest-side, rgba(120,80,200,.32), rgba(120,80,200,0) 72%);
+  }
+  .wrap{position:relative; z-index:1; max-width:1180px; margin:0 auto}
+  h1,h2,h3{margin:0}
+  a{color:var(--gold)}
+  .muted{color:var(--muted)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px}
+  .hidden{display:none !important}
+
+  /* ------------------------------- üst bar ------------------------------- */
+  .topbar{display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; margin-bottom:18px}
+  .brand{display:flex; align-items:center; gap:13px; min-width:0}
+  .logo{
+    width:44px; height:44px; flex:0 0 44px; border-radius:13px; display:grid; place-items:center; font-size:21px; color:var(--gold);
+    background:linear-gradient(160deg,#2a1b42,#1a1128); border:1px solid var(--line);
+    box-shadow:0 10px 26px rgba(0,0,0,.45);
+  }
+  .title{font-size:20px; letter-spacing:.2px}
+  .subtitle{margin:2px 0 0; color:var(--muted); font-size:12.5px}
+  .top-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .chip-conn{
+    display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600;
+    border:1px solid var(--line); border-radius:999px; padding:6px 12px; background:#1a1128; color:var(--muted);
+  }
+  .chip-conn .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 8px}
+  .chip-conn.connected{color:#bff7e0; border-color:rgba(76,217,160,.45); background:rgba(76,217,160,.1)}
+  .chip-conn.connected .dot{background:var(--ok); box-shadow:0 0 8px rgba(76,217,160,.9)}
+  .chip-conn.readonly{color:#ffe3ac; border-color:rgba(255,179,71,.45); background:rgba(255,179,71,.1)}
+  .chip-conn.readonly .dot{background:var(--warn)}
+  .chip-conn.offline{color:#ffd3d3; border-color:rgba(255,107,107,.45); background:rgba(255,107,107,.1)}
+  .chip-conn.offline .dot{background:var(--err)}
+  .chip-conn.busy .dot{animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25;transform:scale(.85)}50%{opacity:1;transform:scale(1.2)}}
+
+  /* --------------------------------- kart -------------------------------- */
+  .card{
+    background:linear-gradient(180deg, rgba(30,20,45,.96), rgba(25,17,38,.97));
+    border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:0 20px 50px rgba(0,0,0,.38); margin-bottom:16px; overflow:hidden;
+  }
+  .card-head{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px; justify-content:space-between;
+    padding:14px 16px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.015);
+  }
+  .card-title{font-size:14px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#d9cff0}
+  .card-body{padding:16px}
+  .card-foot{padding:11px 16px; border-top:1px solid var(--line); background:rgba(0,0,0,.18); color:var(--muted); font-size:12px; display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center}
+  .card-foot .right{margin-left:auto; display:flex; gap:8px; align-items:center}
+
+  /* ------------------------------- formlar ------------------------------- */
+  .settings-grid{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto; gap:12px; align-items:end}
+  .field{display:flex; flex-direction:column; gap:6px; min-width:0}
+  .field > span{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:600}
+  input[type="text"],input[type="search"],input[type="number"],input[type="password"],select{
+    font:inherit; color:var(--text); background:#180f27; border:1px solid var(--line);
+    border-radius:11px; padding:10px 12px; width:100%; min-width:0; outline:none; transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus,select:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(120,80,200,.22)}
+  input::placeholder{color:#7b6b99}
+  input:disabled,select:disabled{opacity:.6; cursor:not-allowed}
+  .input-row{display:flex; gap:8px; align-items:stretch}
+  .input-row input{flex:1 1 auto}
+  .btn{
+    appearance:none; cursor:pointer; font:inherit; font-weight:600; color:var(--text);
+    background:linear-gradient(180deg,#33224e,#271a3c); border:1px solid var(--line); border-radius:11px;
+    padding:10px 15px; display:inline-flex; align-items:center; justify-content:center; gap:8px; white-space:nowrap;
+    transition:transform .12s, border-color .15s, background .15s, opacity .15s;
+  }
+  .btn:hover:not(:disabled){border-color:var(--accent); transform:translateY(-1px)}
+  .btn:active:not(:disabled){transform:translateY(0)}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn.accent{background:linear-gradient(180deg,#8a5fe0,#6a45b8); border-color:#9b76e8}
+  .btn.ghost{background:transparent}
+  .btn.danger{background:linear-gradient(180deg,#a8324a,#83243a); border-color:#c2455f}
+  .btn.gold{background:linear-gradient(180deg,#e0b23c,#c19324); border-color:#f0c85c; color:#241a05}
+  .btn.small{padding:7px 11px; font-size:13px; border-radius:10px}
+  .btn.wide{width:100%}
+  .btn[data-busy="1"]{pointer-events:none}
+  .spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .8s linear infinite;display:none}
+  .btn[data-busy="1"] .spin{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hint{color:var(--muted); font-size:12px; margin:10px 0 0}
+  .hint strong{color:#e5d9ff}
+
+  /* ------------------------------- uyarılar ------------------------------- */
+  .banner{
+    display:flex; gap:11px; align-items:flex-start; padding:12px 14px; border-radius:12px; font-size:13.5px; margin-bottom:16px;
+    background:rgba(255,179,71,.1); border:1px solid rgba(255,179,71,.45); color:#ffe6bd;
+  }
+  .banner.err{background:rgba(255,107,107,.1); border-color:rgba(255,107,107,.45); color:#ffd9d9}
+  .banner .ico{font-size:16px; line-height:1.3}
+  .banner strong{display:block; color:#fff; margin-bottom:2px}
+  .banner .line{display:block; opacity:.92}
+  .banner .code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px}
+
+  /* -------------------------------- grid --------------------------------- */
+  .columns{display:grid; grid-template-columns:minmax(280px,360px) minmax(0,1fr); gap:16px; align-items:start}
+  .columns .card{margin-bottom:0}
+
+  /* ------------------------------ kullanıcılar ---------------------------- */
+  .search-row{display:flex; gap:8px; align-items:center}
+  .user-list{list-style:none; margin:0; padding:0; max-height:460px; overflow-y:auto; overscroll-behavior:contain}
+  .user-item{
+    display:flex; align-items:center; gap:11px; padding:11px 16px; border-bottom:1px solid rgba(58,42,85,.5);
+    cursor:pointer; transition:background .14s; width:100%; text-align:left; background:none; border-left:0; border-right:0; border-top:0;
+    color:var(--text); font:inherit;
+  }
+  .user-item:hover:not(:disabled){background:rgba(120,80,200,.1)}
+  .user-item.active{background:rgba(120,80,200,.2); box-shadow:inset 3px 0 0 var(--accent)}
+  .user-item:disabled{opacity:.6; cursor:not-allowed}
+  .avatar{
+    width:34px; height:34px; flex:0 0 34px; border-radius:10px; display:grid; place-items:center; font-weight:700; font-size:13px;
+    background:linear-gradient(160deg,#33224e,#241735); border:1px solid var(--line); text-transform:uppercase; color:#efe9fb;
+  }
+  .user-item.active .avatar{border-color:var(--accent); color:#fff}
+  .u-main{min-width:0; flex:1 1 auto}
+  .u-name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .u-meta{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .u-points{font-weight:700; color:var(--gold); font-variant-numeric:tabular-nums; font-size:14px; white-space:nowrap}
+  .u-points small{display:block; font-weight:500; font-size:10px; color:var(--muted); text-align:right; letter-spacing:.04em}
+  .list-state{padding:22px 16px; text-align:center; color:var(--muted); font-size:13px}
+  .list-state strong{display:block; color:var(--text); margin-bottom:4px}
+
+  /* -------------------------------- detay -------------------------------- */
+  .empty-detail{padding:38px 20px; text-align:center; color:var(--muted)}
+  .empty-detail .big{font-size:30px; margin-bottom:8px; opacity:.7}
+  .empty-detail strong{display:block; color:var(--text); margin-bottom:4px}
+  .detail-head{display:flex; flex-wrap:wrap; gap:14px; align-items:center; padding:16px; border-bottom:1px solid var(--line); background:rgba(120,80,200,.06)}
+  .detail-head .avatar{width:48px; height:48px; flex:0 0 48px; font-size:18px; border-radius:14px}
+  .detail-name{font-size:19px; font-weight:700; word-break:break-word}
+  .detail-id{color:var(--muted); font-size:12px; word-break:break-all}
+  .points-big{margin-left:auto; text-align:right}
+  .points-big .val{font-size:28px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums; line-height:1.1}
+  .points-big .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:9px; padding:16px}
+  .stat{background:#180f27; border:1px solid var(--line); border-radius:11px; padding:9px 11px}
+  .stat .k{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+  .stat .v{font-weight:700; font-size:14px; margin-top:2px; word-break:break-word}
+  .section{padding:16px; border-top:1px solid var(--line)}
+  .section-title{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#d9cff0; margin-bottom:11px; display:flex; align-items:center; gap:8px}
+  .quick-row{display:flex; flex-wrap:wrap; gap:7px; margin-top:10px}
+  .quick{
+    cursor:pointer; font:inherit; font-weight:700; font-size:13px; padding:7px 12px; border-radius:999px;
+    border:1px solid var(--line); background:#1a1128; color:#d9cff0; transition:all .13s; font-variant-numeric:tabular-nums;
+  }
+  .quick:hover:not(:disabled){border-color:var(--accent); color:#fff}
+  .quick.plus:hover:not(:disabled){border-color:rgba(76,217,160,.7); color:#bff7e0}
+  .quick.minus:hover:not(:disabled){border-color:rgba(255,107,107,.7); color:#ffd3d3}
+  .quick.active{border-color:var(--gold); background:rgba(255,211,77,.14); color:var(--gold)}
+  .quick:disabled{opacity:.4; cursor:not-allowed}
+  .points-form{display:grid; grid-template-columns:120px minmax(0,1fr) auto; gap:10px; align-items:end; margin-top:12px}
+  .danger-zone{border:1px solid rgba(255,107,107,.4); background:rgba(255,107,107,.06); border-radius:12px; padding:13px 14px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between}
+  .danger-zone .txt{font-size:13px; color:#ffd9d9; max-width:62ch}
+  .danger-zone .txt strong{display:block; color:#fff; margin-bottom:2px}
+  .inline-error{margin-top:10px; font-size:12.5px; color:#ffd3d3; background:rgba(255,107,107,.09); border:1px solid rgba(255,107,107,.35); border-radius:10px; padding:9px 11px}
+  .inline-error .line{display:block; opacity:.95}
+
+  /* -------------------------------- loglar -------------------------------- */
+  .tabs{display:flex; gap:6px; padding:12px 16px 0; flex-wrap:wrap}
+  .tab{
+    cursor:pointer; font:inherit; font-weight:600; font-size:13px; color:var(--muted); background:transparent;
+    border:1px solid transparent; border-bottom:2px solid transparent; padding:8px 12px; border-radius:10px 10px 0 0;
+  }
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--text); border-bottom-color:var(--accent); background:rgba(120,80,200,.12)}
+  .log-list{list-style:none; margin:0; padding:0; max-height:420px; overflow-y:auto}
+  .log-item{display:flex; gap:11px; padding:11px 16px; border-bottom:1px solid rgba(58,42,85,.5); align-items:flex-start; font-size:13px}
+  .log-item:last-child{border-bottom:none}
+  .log-ico{
+    width:30px;height:30px;flex:0 0 30px;border-radius:9px;display:grid;place-items:center;font-size:14px;
+    background:#1a1128;border:1px solid var(--line)
+  }
+  .log-ico.add{color:var(--ok); border-color:rgba(76,217,160,.45); background:rgba(76,217,160,.1)}
+  .log-ico.remove{color:var(--err); border-color:rgba(255,107,107,.45); background:rgba(255,107,107,.1)}
+  .log-ico.set{color:var(--gold); border-color:rgba(255,211,77,.4); background:rgba(255,211,77,.1)}
+  .log-main{min-width:0; flex:1 1 auto}
+  .log-title{font-weight:600}
+  .log-title .who{color:var(--gold)}
+  .log-sub{color:var(--muted); font-size:12px; word-break:break-word}
+  .log-time{color:#7b6b99; font-size:11.5px; white-space:nowrap; text-align:right; margin-left:auto; padding-left:8px}
+  .log-amount{font-weight:700; font-variant-numeric:tabular-nums}
+  .log-amount.pos{color:var(--ok)}
+  .log-amount.neg{color:var(--err)}
+
+  /* -------------------------------- toast --------------------------------- */
+  .toasts{position:fixed; right:16px; bottom:16px; z-index:60; display:flex; flex-direction:column; gap:9px; max-width:min(400px,calc(100vw - 32px))}
+  .toast{
+    background:#221634; border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:12px;
+    padding:11px 13px; box-shadow:0 16px 40px rgba(0,0,0,.55); font-size:13px; animation:slideIn .18s ease-out;
+  }
+  .toast.success{border-left-color:var(--ok)}
+  .toast.error{border-left-color:var(--err)}
+  .toast.info{border-left-color:var(--warn)}
+  .toast .t-title{font-weight:700; margin-bottom:3px; color:#fff}
+  .toast .t-line{display:block; color:#d9cff0; font-size:12.5px; opacity:.95}
+  .toast .t-line.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; color:#ffb3b3}
+  .toast .t-close{float:right; background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 0 0 8px}
+  @keyframes slideIn{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+
+  /* -------------------------------- modal --------------------------------- */
+  .overlay{position:fixed; inset:0; z-index:70; background:rgba(10,6,18,.72); display:flex; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(3px)}
+  .modal{
+    width:min(480px,100%); background:linear-gradient(180deg,#241735,#1b1229); border:1px solid var(--line);
+    border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.7); overflow:hidden; animation:slideIn .16s ease-out;
+  }
+  .modal.danger{border-color:rgba(255,107,107,.55)}
+  .modal-head{padding:15px 17px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .modal-head h3{font-size:16px}
+  .modal-body{padding:16px 17px; font-size:13.5px}
+  .modal-body p{margin:0 0 10px}
+  .modal-body .summary{background:#180f27; border:1px solid var(--line); border-radius:11px; padding:11px 12px; margin:10px 0; font-size:13px}
+  .modal-body .summary .row{display:flex; justify-content:space-between; gap:10px; padding:3px 0}
+  .modal-body .summary .row .k{color:var(--muted)}
+  .modal-body .summary .row .v{font-weight:700; font-variant-numeric:tabular-nums}
+  .modal-body .warnbox{border:1px solid rgba(255,107,107,.45); background:rgba(255,107,107,.1); color:#ffd9d9; border-radius:11px; padding:10px 12px; font-size:13px; margin:10px 0}
+  .modal-foot{padding:13px 17px; border-top:1px solid var(--line); display:flex; gap:9px; justify-content:flex-end; background:rgba(0,0,0,.2); flex-wrap:wrap}
+  .modal.close-x{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0 4px}
+  .modal .target-name{color:var(--gold); font-weight:700}
+  .footnote{text-align:center; color:#7b6b99; font-size:11.5px; margin-top:20px}
+
+  /* ------------------------------ responsive ------------------------------ */
+  @media (max-width:900px){
+    .columns{grid-template-columns:1fr}
+    .user-list{max-height:300px}
+    .settings-grid{grid-template-columns:1fr;}
+    .points-form{grid-template-columns:1fr 1fr; }
+    .points-form .btn{grid-column:1 / -1}
+  }
+  @media (max-width:560px){
+    body{padding:14px 10px 34px}
+    .title{font-size:18px}
+    .logo{width:38px;height:38px;flex-basis:38px;font-size:18px}
+    .card-body,.section,.stats{padding:12px}
+    .detail-head{padding:12px}
+    .points-big{margin-left:0; text-align:left; width:100%}
+    .points-big .val{font-size:24px}
+    .toasts{right:8px; left:8px; bottom:8px; max-width:none}
+    .danger-zone{flex-direction:column; align-items:stretch}
+    .danger-zone .btn{width:100%}
+    .log-time{font-size:11px}
+    .tabs{padding:10px 10px 0}
+  }
+  @media (max-width:380px){
+    body{font-size:14px}
+    .user-item{padding:10px 12px}
+    .u-points{font-size:13px}
+    .stat .v{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">⚙</div>
+      <div>
+        <h1 class="title">Yönetici Paneli</h1>
+        <p class="subtitle">psych-nm · puan yönetimi ve hesap işlemleri</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="chip-conn" id="connChip"><span class="dot" aria-hidden="true"></span><span id="connText">Bağlantı yok</span></span>
+      <span class="chip-conn hidden" id="mockChip" style="color:var(--gold); border-color:rgba(255,211,77,.45); background:rgba(255,211,77,.1)"><span class="dot" style="background:var(--gold)"></span>demo modu</span>
+      <a class="btn small ghost" href="leaderboard.html" id="boardLink">Liderlik tablosu ↗</a>
+    </div>
+  </header>
+
+  <!-- ------------------------------ ayarlar ------------------------------ -->
+  <section class="card" aria-labelledby="settingsTitle">
+    <div class="card-head">
+      <h2 class="card-title" id="settingsTitle">Bağlantı ayarları</h2>
+      <span class="muted" style="font-size:12px">Anahtar yalnızca bu tarayıcıda (localStorage) saklanır</span>
+    </div>
+    <div class="card-body">
+      <form class="settings-grid" id="settingsForm" autocomplete="off" novalidate>
+        <label class="field">
+          <span>Sunucu URL</span>
+          <input type="text" id="server" placeholder="https://psych-nm.onrender.com" spellcheck="false" autocomplete="url">
+        </label>
+        <label class="field">
+          <span>Admin Key</span>
+          <div class="input-row">
+            <input type="password" id="adminKey" placeholder="X-Admin-Key" spellcheck="false" autocomplete="off">
+            <button class="btn small ghost" type="button" id="toggleKey" aria-label="Anahtarı göster">👁</button>
+          </div>
+        </label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn accent" type="submit" id="connectBtn" data-action="connect">
+            <span class="spin" aria-hidden="true"></span><span>Bağlan</span>
+          </button>
+          <button class="btn ghost" type="button" id="disconnectBtn" data-action="connect" title="Bağlantıyı kes ve yerel oturumu kapat">Kes</button>
+        </div>
+      </form>
+      <p class="hint" id="settingsHint">
+        Bağlan düğmesi <span class="mono">GET /health</span> ile sunucuyu, ardından anahtarı sınar.
+        Bağlantı kurulamazsa panel <strong>salt okunur</strong> moda geçer; puan ve silme işlemleri kapalı kalır.
+      </p>
+    </div>
+  </section>
+
+  <div class="banner hidden" id="banner" role="status"></div>
+
+  <!-- --------------------------- kullanıcı + detay --------------------------- -->
+  <div class="columns">
+    <section class="card" aria-labelledby="usersTitle">
+      <div class="card-head">
+        <h2 class="card-title" id="usersTitle">Kullanıcılar</h2>
+        <span class="muted" style="font-size:12px" id="userCount">—</span>
+      </div>
+      <div class="card-body" style="padding:12px 16px">
+        <div class="search-row">
+          <input type="search" id="userSearch" placeholder="Kullanıcı adı ara…" autocomplete="off" spellcheck="false" aria-label="Kullanıcı adı ara" disabled>
+          <button class="btn small ghost" type="button" id="refreshUsers" title="Listeyi yenile" data-action="refresh">↻</button>
+        </div>
+      </div>
+      <ul class="user-list" id="userList" aria-live="polite"></ul>
+      <div class="list-state" id="listState">Bağlanınca kullanıcılar listelenir.</div>
+      <div class="card-foot">
+        <span id="searchHint">Canlı arama · en fazla 20 sonuç</span>
+        <span class="right"><span class="mono" id="apiBaseLabel">—</span></span>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="detailTitle">
+      <div class="card-head">
+        <h2 class="card-title" id="detailTitle">Seçili kullanıcı</h2>
+        <button class="btn small ghost hidden" type="button" id="refreshUser" data-action="refresh">↻ Sunucudan yenile</button>
+      </div>
+
+      <div class="empty-detail" id="emptyDetail">
+        <div class="big" aria-hidden="true">👤</div>
+        <strong>Kullanıcı seçilmedi</strong>
+        <p class="muted" style="margin:0">Soldaki listeden bir kullanıcı seçin; puan ve hesap işlemleri burada görünür.</p>
+      </div>
+
+      <div id="detailPanel" class="hidden">
+        <div class="detail-head">
+          <div class="avatar" id="detailAvatar" aria-hidden="true">?</div>
+          <div style="min-width:0">
+            <div class="detail-name" id="detailName">—</div>
+            <div class="detail-id mono" id="detailId">—</div>
+          </div>
+          <div class="points-big">
+            <div class="val" id="detailPoints">0</div>
+            <div class="lbl">toplam puan</div>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="k">Kayıt tarihi</div><div class="v" id="detailCreated">—</div></div>
+          <div class="stat"><div class="k">Çalınan şarkı</div><div class="v" id="detailSongs">—</div></div>
+          <div class="stat"><div class="k">Kullanıcı kimliği</div><div class="v mono" id="detailIdShort">—</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">◇ Puan işlemi</div>
+          <div class="points-form">
+            <label class="field">
+              <span>Miktar</span>
+              <input type="number" id="amount" step="1" inputmode="numeric" placeholder="ör. 10" disabled>
+            </label>
+            <label class="field">
+              <span>Sebep</span>
+              <input type="text" id="reason" maxlength="120" placeholder="ör. etkinlik ödülü" disabled>
+            </label>
+            <button class="btn gold" type="button" id="applyPoints" data-action="apply" disabled>
+              <span class="spin" aria-hidden="true"></span><span>Puanı uygula</span>
+            </button>
+          </div>
+          <div class="quick-row" id="quickRow">
+            <button class="quick plus" type="button" data-quick="1" disabled>+1</button>
+            <button class="quick plus" type="button" data-quick="5" disabled>+5</button>
+            <button class="quick plus" type="button" data-quick="10" disabled>+10</button>
+            <button class="quick plus" type="button" data-quick="50" disabled>+50</button>
+            <button class="quick minus" type="button" data-quick="-1" disabled>−1</button>
+            <button class="quick minus" type="button" data-quick="-5" disabled>−5</button>
+          </div>
+          <p class="hint">Hızlı düğmeler miktarı doldurur; işlem onay penceresinden sonra uygulanır. Puan 0'ın altına inmez.</p>
+          <div class="inline-error hidden" id="pointsError" role="alert"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title" style="color:#ffb3b3">⚠ Tehlikeli bölge</div>
+          <div class="danger-zone">
+            <div class="txt">
+              <strong>Hesabı kalıcı olarak sil</strong>
+              Kullanıcı ve tüm score kayıtları silinir. Bu işlem <b>geri alınamaz</b>.
+            </div>
+            <button class="btn danger" type="button" id="deleteUser" data-action="delete" disabled>
+              <span class="spin" aria-hidden="true"></span><span>Hesabı sil…</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- -------------------------------- loglar -------------------------------- -->
+  <section class="card" aria-labelledby="logsTitle" style="margin-top:16px">
+    <div class="card-head">
+      <h2 class="card-title" id="logsTitle">İşlem geçmişi</h2>
+      <button class="btn small ghost" type="button" id="refreshLogs" data-action="refresh">↻ Sunucu kayıtlarını yenile</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" role="tab" aria-selected="true" data-tab="server" id="tabServer">Sunucu kayıtları</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="local" id="tabLocal">Bu tarayıcı (son 100)</button>
+    </div>
+    <ul class="log-list" id="logList" aria-live="polite"></ul>
+    <div class="list-state" id="logState">Sunucu kayıtları için bağlanın.</div>
+    <div class="card-foot">
+      <span id="logHint">/admin/logs · son 50 kayıt</span>
+      <span class="right"><button class="btn small ghost" type="button" id="clearLocal" style="display:none">Yerel geçmişi temizle</button></span>
+    </div>
+  </section>
+
+  <p class="footnote">
+    psych-nm yönetici paneli · service_role anahtarı tarayıcıya hiçbir zaman gönderilmez, tüm işlemler sunucu API'si üzerinden yapılır.
+  </p>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- --------------------------- puan onay penceresi --------------------------- -->
+<div class="overlay hidden" id="pointsModal" role="dialog" aria-modal="true" aria-labelledby="pointsModalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="pointsModalTitle">Puan işlemini onayla</h3>
+      <button class="button close-x" type="button" data-close="points" aria-label="Kapat" style="background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><span class="target-name" id="pointsModalUser">—</span> kullanıcısına puan işlemi uygulanacak.</p>
+      <div class="summary">
+        <div class="row"><span class="k">İşlem</span><span class="v" id="pointsModalAmount">—</span></div>
+        <div class="row"><span class="k">Mevcut puan</span><span class="v" id="pointsModalBefore">—</span></div>
+        <div class="row"><span class="k">Yeni toplam</span><span class="v" style="color:var(--gold)" id="pointsModalAfter">—</span></div>
+        <div class="row"><span class="k">Sebep</span><span class="v" id="pointsModalReason" style="font-weight:500">—</span></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0">Bu işlem sunucuda yönetici kaydına (admin_logs) yazılır.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" type="button" data-close="points">Vazgeç</button>
+      <button class="btn gold" type="button" id="pointsConfirm"><span class="spin" aria-hidden="true"></span><span>Onayla ve uygula</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------------------- silme onay penceresi ---------------------------- -->
+<div class="overlay hidden" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div class="modal danger">
+    <div class="modal-head">
+      <h3 id="deleteModalTitle">Hesabı sil — geri alınamaz</h3>
+      <button type="button" data-close="delete" aria-label="Kapat" style="background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="warnbox">
+        <strong>Bu işlem geri alınamaz.</strong><br>
+        Kullanıcı kaydı ve tüm score satırları kalıcı olarak silinecek.
+      </div>
+      <div class="summary">
+        <div class="row"><span class="k">Kullanıcı</span><span class="v" id="deleteModalUser">—</span></div>
+        <div class="row"><span class="k">Toplam puan</span><span class="v" style="color:var(--gold)" id="deleteModalPoints">—</span></div>
+        <div class="row"><span class="k">Kullanıcı kimliği</span><span class="v mono" id="deleteModalId">—</span></div>
+      </div>
+      <label class="field">
+        <span>Onaylamak için kullanıcı adını yazın: <b id="deleteExpect" style="color:var(--gold)">—</b></span>
+        <input type="text" id="deleteConfirmInput" placeholder="kullanıcı adı" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="hint" id="deleteHint">Kullanıcı adı birebir eşleşene kadar silme düğmesi kapalı kalır.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" type="button" data-close="delete">Vazgeç</button>
+      <button class="btn danger" type="button" id="deleteConfirm" disabled><span class="spin" aria-hidden="true"></span><span>Kalıcı olarak sil</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------ sabitler ------------------------------ */
+  var QS = new URLSearchParams(window.location.search);
+  var MOCK = QS.get('mock') === '1';
+  var DEFAULT_API = 'https://psych-nm.onrender.com';
+  var LS_SERVER = 'psychnm_admin_server';
+  var LS_KEY = 'psychnm_admin_key';
+  var LS_LOGS = 'psychnm_admin_local_logs';
+  var TIMEOUT_MS = 90000;
+  var SLOW_MS = 1200;
+  var SEARCH_DEBOUNCE = 280;
+  var MAX_LOCAL_LOGS = 100;
+  var QUICK_AMOUNTS = [1, 5, 10, 50, -1, -5];
+
+  /* ------------------------------- durum -------------------------------- */
+  var state = {
+    base: '',
+    key: '',
+    mode: 'offline',       // offline | readonly | connected
+    busy: 0,
+    users: [],
+    usersLoading: false,
+    searchTimer: null,
+    searchSeq: 0,
+    selected: null,        // {user_id, username, points, created_at, scores_count}
+    selectedId: null,
+    tab: 'server',
+    serverLogs: [],
+    localLogs: [],
+    serverLogsLoading: false,
+    slowTimer: null,
+    pendingAmount: null
+  };
+
+  /* ------------------------------ elementler ----------------------------- */
+  var $ = function (id) { return document.getElementById(id); };
+  var el = {
+    server: $('server'), key: $('adminKey'), toggleKey: $('toggleKey'),
+    connectBtn: $('connectBtn'), disconnectBtn: $('disconnectBtn'), settingsForm: $('settingsForm'),
+    settingsHint: $('settingsHint'),
+    connChip: $('connChip'), connText: $('connText'), mockChip: $('mockChip'), boardLink: $('boardLink'),
+    banner: $('banner'),
+    userSearch: $('userSearch'), refreshUsers: $('refreshUsers'), userList: $('userList'),
+    listState: $('listState'), userCount: $('userCount'), apiBaseLabel: $('apiBaseLabel'), searchHint: $('searchHint'),
+    emptyDetail: $('emptyDetail'), detailPanel: $('detailPanel'), refreshUser: $('refreshUser'),
+    detailAvatar: $('detailAvatar'), detailName: $('detailName'), detailId: $('detailId'),
+    detailPoints: $('detailPoints'), detailCreated: $('detailCreated'), detailSongs: $('detailSongs'),
+    detailIdShort: $('detailIdShort'),
+    amount: $('amount'), reason: $('reason'), applyPoints: $('applyPoints'), quickRow: $('quickRow'),
+    pointsError: $('pointsError'), deleteUser: $('deleteUser'),
+    logList: $('logList'), logState: $('logState'), logHint: $('logHint'), refreshLogs: $('refreshLogs'),
+    clearLocal: $('clearLocal'), tabServer: $('tabServer'), tabLocal: $('tabLocal'),
+    toasts: $('toasts'),
+    pointsModal: $('pointsModal'), pointsModalUser: $('pointsModalUser'), pointsModalAmount: $('pointsModalAmount'),
+    pointsModalBefore: $('pointsModalBefore'), pointsModalAfter: $('pointsModalAfter'),
+    pointsModalReason: $('pointsModalReason'), pointsConfirm: $('pointsConfirm'),
+    deleteModal: $('deleteModal'), deleteModalUser: $('deleteModalUser'), deleteModalPoints: $('deleteModalPoints'),
+    deleteModalId: $('deleteModalId'), deleteConfirmInput: $('deleteConfirmInput'), deleteConfirm: $('deleteConfirm'),
+    deleteExpect: $('deleteExpect'), deleteHint: $('deleteHint')
+  };
+
+  /* ------------------------------ yardımcılar ---------------------------- */
+  function lsGet(key) { try { return window.localStorage.getItem(key); } catch (e) { return null; } }
+  function lsSet(key, value) { try { window.localStorage.setItem(key, value); } catch (e) { /* yok say */ } }
+  function lsDel(key) { try { window.localStorage.removeItem(key); } catch (e) { /* yok say */ } }
+
+  function normalizeServer(raw) {
+    var value = String(raw == null ? '' : raw).trim();
+    if (!value) return '';
+    if (!/^https?:\/\//i.test(value)) value = 'https://' + value;
+    return value.replace(/\/+$/, '');
+  }
+
+  function num(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return '0';
+    return new Intl.NumberFormat('tr-TR').format(n);
+  }
+
+  function dateTime(value) {
+    if (!value) return '—';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d);
+  }
+
+  function clock(value) {
+    var d = value ? new Date(value) : new Date();
+    if (isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(d);
+  }
+
+  function trLower(text) { return String(text == null ? '' : text).toLocaleLowerCase('tr'); }
+  function initial(name) { return (String(name || '?').replace(/\s+/g, '').slice(0, 1) || '?'); }
+  function shortId(id) { return String(id || '').slice(0, 8) || '—'; }
+
+  function ApiError(message, info) {
+    this.name = 'ApiError';
+    this.message = message;
+    info = info || {};
+    this.status = info.status || null;
+    this.serverError = info.serverError || '';
+    this.hint = info.hint || '';
+    this.network = !!info.network;
+    this.timeout = !!info.timeout;
+  }
+  ApiError.prototype = Object.create(Error.prototype);
+  ApiError.prototype.constructor = ApiError;
+
+  function errorLines(err) {
+    var lines = [];
+    if (err instanceof ApiError) {
+      if (err.status) lines.push('HTTP ' + err.status);
+      if (err.serverError) lines.push('Sunucu mesajı: ' + err.serverError);
+      if (err.hint) lines.push(err.hint);
+      if (err.timeout) lines.push('İstek 90 saniye içinde yanıtlanmadı. Sunucu uykuda olabilir; birazdan tekrar deneyin.');
+      if (err.network) lines.push('Ağa ulaşılamadı. Render ücretsiz planda ilk istek 30-60 saniye sürebilir.');
+    } else {
+      lines.push(String(err && err.message ? err.message : err));
+    }
+    return lines;
+  }
+
+  /* -------------------------------- toast -------------------------------- */
+  function toast(kind, title, lines) {
+    var box = document.createElement('div');
+    box.className = 'toast ' + (kind || 'info');
+    box.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+
+    var close = document.createElement('button');
+    close.className = 't-close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Kapat');
+    close.textContent = '✕';
+    close.addEventListener('click', function () { remove(); });
+    box.appendChild(close);
+
+    var t = document.createElement('div');
+    t.className = 't-title';
+    t.textContent = title;
+    box.appendChild(t);
+
+    (lines || []).forEach(function (line) {
+      if (!line) return;
+      var l = document.createElement('span');
+      l.className = 't-line' + (/^(HTTP |Ağa |İstek )/.test(line) ? ' code' : '');
+      l.textContent = line;
+      box.appendChild(l);
+    });
+
+    el.toasts.appendChild(box);
+
+    var timer = window.setTimeout(remove, kind === 'error' ? 9000 : 5200);
+    function remove() {
+      window.clearTimeout(timer);
+      if (box.parentNode) box.parentNode.removeChild(box);
+    }
+    return box;
+  }
+
+  function toastError(title, err) {
+    return toast('error', title, errorLines(err));
+  }
+
+  /* ------------------------------ ağ katmanı ----------------------------- */
+  function requestRaw(url, options) {
+    var fetchFn = (typeof window.fetch === 'function') ? window.fetch : null;
+    if (!fetchFn) return Promise.reject(new ApiError('Tarayıcı fetch desteklemiyor.', {}));
+
+    var controller = (typeof AbortController === 'function') ? new AbortController() : null;
+    var timedOut = false;
+    var timer = null;
+    if (controller) {
+      timer = window.setTimeout(function () { timedOut = true; controller.abort(); }, TIMEOUT_MS);
+    }
+
+    var headers = { 'Accept': 'application/json' };
+    if (options.auth !== false && state.key) headers['X-Admin-Key'] = state.key;
+    if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+
+    var init = { method: options.method || 'GET', headers: headers, cache: 'no-store' };
+    if (controller) init.signal = controller.signal;
+    if (options.body !== undefined) init.body = JSON.stringify(options.body);
+
+    return fetchFn(url, init).then(function (res) {
+      return res.text().then(function (text) {
+        var data = null;
+        if (text) { try { data = JSON.parse(text); } catch (e) { data = null; } }
+        if (!res.ok) {
+          throw new ApiError('Sunucu isteği reddetti.', {
+            status: res.status,
+            serverError: data && data.error ? String(data.error) : (text ? text.slice(0, 300) : ''),
+            hint: data && data.hint ? String(data.hint) : ''
+          });
+        }
+        return data;
+      });
+    }).catch(function (err) {
+      if (err instanceof ApiError) throw err;
+      if (timedOut) throw new ApiError('İstek 90 saniyede yanıtlanmadı.', { timeout: true });
+      throw new ApiError('Sunucuya ulaşılamadı (ağ hatası).', { network: true });
+    }).then(function (data) {
+      if (timer) window.clearTimeout(timer);
+      return data;
+    }, function (err) {
+      if (timer) window.clearTimeout(timer);
+      throw err;
+    });
+  }
+
+  function api(path, options) {
+    options = options || {};
+    if (MOCK) return mockApi(path, options);
+    return requestRaw(state.base + path, options);
+  }
+
+  /* -------------------------------- demo --------------------------------- */
+  var MOCK_DB = null;
+  function mockDb() {
+    if (MOCK_DB) return MOCK_DB;
+    var now = Date.now();
+    MOCK_DB = {
+      users: [
+        { user_id: 'mock-0001', username: 'mio', points: 128, created_at: new Date(now - 86400000 * 41).toISOString(), scores_count: 24 },
+        { user_id: 'mock-0002', username: 'karanlik', points: 96, created_at: new Date(now - 86400000 * 33).toISOString(), scores_count: 18 },
+        { user_id: 'mock-0003', username: 'pusula', points: 71, created_at: new Date(now - 86400000 * 22).toISOString(), scores_count: 15 },
+        { user_id: 'mock-0004', username: 'gece_kusu', points: 64, created_at: new Date(now - 86400000 * 18).toISOString(), scores_count: 12 },
+        { user_id: 'mock-0005', username: 'nokta', points: 33, created_at: new Date(now - 86400000 * 11).toISOString(), scores_count: 9 },
+        { user_id: 'mock-0006', username: 'sessizlik', points: 12, created_at: new Date(now - 86400000 * 6).toISOString(), scores_count: 4 },
+        { user_id: 'mock-0007', username: 'zeynep', points: 5, created_at: new Date(now - 86400000 * 2).toISOString(), scores_count: 2 },
+        { user_id: 'mock-0008', username: 'yeni_oyuncu', points: 0, created_at: new Date(now - 3600000 * 5).toISOString(), scores_count: 0 }
+      ],
+      logs: [
+        { id: 'log-1', action: 'add_points', target_user_id: 'mock-0001', target_username: 'mio', amount: 10, reason: 'haftalık etkinlik', admin_ip: '85.100.20.11', created_at: new Date(now - 3600000 * 3).toISOString() },
+        { id: 'log-2', action: 'set_points', target_user_id: 'mock-0005', target_username: 'nokta', amount: -2, reason: 'puan 0 tabanına sabitlendi', admin_ip: '85.100.20.11', created_at: new Date(now - 3600000 * 8).toISOString() },
+        { id: 'log-3', action: 'delete_user', target_user_id: 'mock-0099', target_username: 'eski_hesap', amount: null, reason: 'talep üzerine', admin_ip: '85.100.20.11', created_at: new Date(now - 3600000 * 26).toISOString() }
+      ]
+    };
+    return MOCK_DB;
+  }
+
+  function mockApi(path, options) {
+    options = options || {};
+    var method = options.method || 'GET';
+    return new Promise(function (resolve, reject) {
+      window.setTimeout(function () {
+        var db = mockDb();
+        var url = String(path);
+        var qIndex = url.indexOf('?');
+        var pathname = qIndex === -1 ? url : url.slice(0, qIndex);
+        var params = new URLSearchParams(qIndex === -1 ? '' : url.slice(qIndex + 1));
+
+        if (pathname === '/health') {
+          resolve({ status: 'ok', users_table: 'ok' });
+          return;
+        }
+        if (pathname === '/users' && method === 'GET') {
+          var q = trLower(params.get('q') || '');
+          var limit = parseInt(params.get('limit'), 10) || 20;
+          var list = db.users.filter(function (u) { return !q || trLower(u.username).indexOf(q) !== -1; });
+          list.sort(function (a, b) { return trLower(a.username) < trLower(b.username) ? -1 : 1; });
+          resolve({
+            users: list.slice(0, limit).map(function (u) {
+              return { user_id: u.user_id, username: u.username, points: u.points, created_at: u.created_at };
+            })
+          });
+          return;
+        }
+        var userMatch = /^\/users\/([^/]+)$/.exec(pathname);
+        if (userMatch && method === 'GET') {
+          var found = db.users.filter(function (u) { return u.user_id === userMatch[1]; })[0];
+          if (!found) return reject(new ApiError('Sunucu isteği reddetti.', { status: 404, serverError: 'Kullanıcı bulunamadı' }));
+          resolve({
+            user_id: found.user_id, username: found.username, points: found.points,
+            created_at: found.created_at, scores_count: found.scores_count
+          });
+          return;
+        }
+        if (userMatch && method === 'DELETE') {
+          var idx = -1;
+          db.users.forEach(function (u, i) { if (u.user_id === userMatch[1]) idx = i; });
+          if (idx === -1) return reject(new ApiError('Sunucu isteği reddetti.', { status: 404, serverError: 'Kullanıcı bulunamadı' }));
+          var removed = db.users.splice(idx, 1)[0];
+          db.logs.unshift({
+            id: 'log-' + Date.now(), action: 'delete_user', target_user_id: removed.user_id,
+            target_username: removed.username, amount: null, reason: (options.body || {}).reason || null,
+            admin_ip: '127.0.0.1', created_at: new Date().toISOString()
+          });
+          resolve({ success: true });
+          return;
+        }
+        if (pathname === '/points' && method === 'POST') {
+          var body = options.body || {};
+          var target = db.users.filter(function (u) { return u.user_id === body.user_id; })[0];
+          if (!target) return reject(new ApiError('Sunucu isteği reddetti.', { status: 404, serverError: 'Kullanıcı bulunamadı' }));
+          var current = Number(target.points) || 0;
+          var next = Math.max(0, current + Number(body.amount));
+          target.points = next;
+          db.logs.unshift({
+            id: 'log-' + Date.now(), action: next - current === Number(body.amount) ? 'add_points' : 'set_points',
+            target_user_id: target.user_id, target_username: target.username,
+            amount: next - current, reason: body.reason || null, admin_ip: '127.0.0.1', created_at: new Date().toISOString()
+          });
+          resolve({ success: true, points: next });
+          return;
+        }
+        if (pathname === '/admin/logs') {
+          resolve({ logs: db.logs.slice(0, parseInt(params.get('limit'), 10) || 50) });
+          return;
+        }
+        reject(new ApiError('Demo modunda bu uç yok.', { status: 404, serverError: 'demo' }));
+      }, 200);
+    });
+  }
+
+  /* ----------------------------- yükleme durumu --------------------------- */
+  function setConn(kind, text) {
+    el.connChip.className = 'chip-conn ' + kind;
+    el.connText.textContent = text;
+  }
+
+  function setMode(mode, reason) {
+    state.mode = mode;
+    if (MOCK && mode === 'connected') {
+      setConn('connected', 'Bağlı (demo)');
+    } else if (mode === 'connected') {
+      setConn('connected', 'Bağlı · tam yetki');
+    } else if (mode === 'readonly') {
+      setConn('readonly', 'Salt okunur');
+    } else {
+      setConn('offline', 'Bağlantı yok');
+    }
+
+    if (mode === 'connected') {
+      hideBanner();
+    } else if (mode === 'readonly') {
+      showBanner(false, reason || 'Salt okunur mod',
+        ['Puan işlemleri ve hesap silme kapalı. Ayarlardan geçerli bir Admin Key ile yeniden bağlanın.']);
+    } else if (reason) {
+      showBanner(true, reason.title || 'Bağlantı kurulamadı', reason.lines || []);
+    }
+
+    el.userSearch.disabled = mode !== 'connected';
+    syncDisabled();
+  }
+
+  function showBanner(isError, title, lines) {
+    el.banner.className = 'banner' + (isError ? ' err' : '');
+    el.banner.textContent = '';
+    var ico = document.createElement('span');
+    ico.className = 'ico';
+    ico.setAttribute('aria-hidden', 'true');
+    ico.textContent = isError ? '⛔' : '⚠';
+    el.banner.appendChild(ico);
+    var box = document.createElement('div');
+    var strong = document.createElement('strong');
+    strong.textContent = title;
+    box.appendChild(strong);
+    (lines || []).forEach(function (line) {
+      if (!line) return;
+      var span = document.createElement('span');
+      span.className = 'line' + (/^HTTP /.test(line) ? ' code' : '');
+      span.textContent = line;
+      box.appendChild(span);
+    });
+    el.banner.appendChild(box);
+    el.banner.classList.remove('hidden');
+  }
+
+  function hideBanner() {
+    el.banner.classList.add('hidden');
+    el.banner.textContent = '';
+  }
+
+  // Düğmenin metin düğümü: spinner'lı düğmelerde son <span>, diğerlerinde düğmenin kendisi.
+  function buttonLabelNode(button) {
+    if (!button) return null;
+    var spans = button.querySelectorAll('span');
+    return spans.length ? spans[spans.length - 1] : button;
+  }
+
+  function startSlowHint(button) {
+    if (!button) return;
+    var labelNode = buttonLabelNode(button);
+    if (!labelNode) return;
+    if (!button.__labelText) button.__labelText = labelNode.textContent;
+    if (button.__slowTimer) window.clearTimeout(button.__slowTimer);
+    button.__slowTimer = window.setTimeout(function () {
+      if (button.getAttribute('data-busy') === '1') {
+        labelNode.textContent = 'Sunucu uyanıyor, 1 dakika sürebilir…';
+      }
+    }, SLOW_MS);
+  }
+
+  function stopSlowHint(button, label) {
+    if (!button) return;
+    if (button.__slowTimer) { window.clearTimeout(button.__slowTimer); button.__slowTimer = null; }
+    var labelNode = buttonLabelNode(button);
+    if (!labelNode) return;
+    var text = label || button.__labelText;
+    if (text) labelNode.textContent = text;
+  }
+
+  function setButtonBusy(button, busy) {
+    if (!button) return;
+    button.setAttribute('data-busy', busy ? '1' : '0');
+    button.disabled = busy;
+  }
+
+  function beginOp(button, label) {
+    state.busy += 1;
+    if (button) {
+      setButtonBusy(button, true);
+      startSlowHint(button);
+    }
+    syncDisabled();
+  }
+
+  function endOp(button, label) {
+    state.busy = Math.max(0, state.busy - 1);
+    stopSlowHint(button, label);
+    if (button) setButtonBusy(button, false);
+    syncDisabled();
+  }
+
+  function isAdmin() { return state.mode === 'connected'; }
+
+  function syncDisabled() {
+    var busy = state.busy > 0;
+    var admin = isAdmin();
+
+    el.connectBtn.disabled = busy;
+    el.disconnectBtn.disabled = busy;
+    el.toggleKey.disabled = false;
+
+    var amountValid = validAmount() !== null;
+    el.amount.disabled = busy || !admin || !state.selected;
+    el.reason.disabled = busy || !admin || !state.selected;
+    el.applyPoints.disabled = busy || !admin || !state.selected || !amountValid;
+    el.deleteUser.disabled = busy || !admin || !state.selected;
+
+    var quicks = el.quickRow.querySelectorAll('.quick');
+    for (var i = 0; i < quicks.length; i += 1) {
+      quicks[i].disabled = busy || !admin || !state.selected;
+    }
+
+    el.refreshUsers.disabled = busy || !admin;
+    el.refreshUser.disabled = busy || !admin || !state.selectedId;
+    el.refreshLogs.disabled = busy || !admin;
+
+    var items = el.userList.querySelectorAll('.user-item');
+    for (var j = 0; j < items.length; j += 1) items[j].disabled = busy;
+
+    if (busy) el.connChip.classList.add('busy'); else el.connChip.classList.remove('busy');
+  }
+
+  function validAmount() {
+    if (el.amount.value === '' || el.amount.value === null) return null;
+    var n = Number(el.amount.value);
+    if (!isFinite(n) || Math.floor(n) !== n) return null;
+    if (n === 0) return null;
+    if (Math.abs(n) > 1000000) return null;
+    return n;
+  }
+
+  /* ------------------------------ kullanıcılar ---------------------------- */
+  function setListState(html, isHtml) {
+    el.listState.classList.remove('hidden');
+    el.listState.textContent = '';
+    if (isHtml) {
+      el.listState.innerHTML = html;
+    } else {
+      el.listState.textContent = html;
+    }
+  }
+
+  function renderUsers() {
+    el.userList.textContent = '';
+    if (!isAdmin()) {
+      el.userCount.textContent = '—';
+      setListState('Bağlanınca kullanıcılar listelenir.');
+      return;
+    }
+    if (state.users.length === 0) {
+      el.userCount.textContent = '0';
+      setListState(state.usersLoading ? 'Yükleniyor…' : 'Sonuç yok. Farklı bir arama deneyin.');
+      return;
+    }
+    el.listState.classList.add('hidden');
+    el.userCount.textContent = state.users.length + ' sonuç';
+
+    state.users.forEach(function (user) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'user-item' + (user.user_id === state.selectedId ? ' active' : '');
+      btn.setAttribute('data-id', user.user_id);
+
+      var av = document.createElement('span');
+      av.className = 'avatar';
+      av.setAttribute('aria-hidden', 'true');
+      av.textContent = initial(user.username);
+      btn.appendChild(av);
+
+      var main = document.createElement('span');
+      main.className = 'u-main';
+      var name = document.createElement('span');
+      name.className = 'u-name';
+      name.textContent = user.username || '(isimsiz)';
+      main.appendChild(name);
+      var meta = document.createElement('span');
+      meta.className = 'u-meta';
+      meta.textContent = (user.created_at ? 'kayıt: ' + dateTime(user.created_at) : shortId(user.user_id));
+      main.appendChild(meta);
+      btn.appendChild(main);
+
+      var pts = document.createElement('span');
+      pts.className = 'u-points';
+      pts.textContent = num(user.points);
+      var small = document.createElement('small');
+      small.textContent = 'puan';
+      pts.appendChild(small);
+      btn.appendChild(pts);
+
+      btn.addEventListener('click', function () { selectUser(user.user_id); });
+      li.appendChild(btn);
+      el.userList.appendChild(li);
+    });
+  }
+
+  function loadUsers() {
+    if (!isAdmin()) return Promise.resolve();
+    state.usersLoading = true;
+    state.users = [];
+    renderUsers();
+    setListState('Yükleniyor…');
+
+    var seq = ++state.searchSeq;
+    var query = el.userSearch.value.trim();
+    return api('/users?q=' + encodeURIComponent(query) + '&limit=20')
+      .then(function (data) {
+        if (seq !== state.searchSeq) return;
+        state.users = (data && data.users) || [];
+        renderUsers();
+      })
+      .catch(function (err) {
+        if (seq !== state.searchSeq) return;
+        setListState('Liste yüklenemedi. “↻” ile tekrar deneyin.');
+        toastError('Kullanıcı listesi alınamadı', err);
+      })
+      .then(function () {
+        if (seq === state.searchSeq) state.usersLoading = false;
+        syncDisabled();
+      });
+  }
+
+  function findUserInList(id) {
+    return state.users.filter(function (u) { return u.user_id === id; })[0] || null;
+  }
+
+  function selectUser(id) {
+    if (state.busy > 0) return;
+    state.selectedId = id;
+    renderUsers();
+    state.selected = null;
+    el.emptyDetail.classList.add('hidden');
+    el.detailPanel.classList.remove('hidden');
+    el.refreshUser.classList.remove('hidden');
+    el.detailName.textContent = '…';
+    el.detailId.textContent = id;
+    el.detailAvatar.textContent = initial((findUserInList(id) || {}).username || '?');
+    el.detailPoints.textContent = '—';
+    el.detailCreated.textContent = '—';
+    el.detailSongs.textContent = '—';
+    el.detailIdShort.textContent = shortId(id);
+    el.pointsError.classList.add('hidden');
+    syncDisabled();
+    loadUserDetail(id);
+  }
+
+  function loadUserDetail(id) {
+    if (!isAdmin()) return Promise.resolve();
+    setButtonBusy(el.refreshUser, true);
+    startSlowHint(el.refreshUser);
+
+    return api('/users/' + encodeURIComponent(id))
+      .then(function (data) {
+        if (state.selectedId !== id) return;
+        var user = data || {};
+        state.selected = {
+          user_id: user.user_id || id,
+          username: user.username || '',
+          points: Number(user.points) || 0,
+          created_at: user.created_at || null,
+          scores_count: (user.scores_count === null || user.scores_count === undefined) ? null : Number(user.scores_count)
+        };
+        renderDetail();
+      })
+      .catch(function (err) {
+        if (state.selectedId !== id) return;
+        el.detailName.textContent = 'Yüklenemedi';
+        toastError('Kullanıcı bilgisi alınamadı', err);
+        if (err instanceof ApiError && err.status === 404) {
+          el.detailName.textContent = 'Kullanıcı bulunamadı';
+          el.detailPoints.textContent = '—';
+        }
+      })
+      .then(function () {
+        setButtonBusy(el.refreshUser, false);
+        stopSlowHint(el.refreshUser, '↻ Sunucudan yenile');
+        syncDisabled();
+      });
+  }
+
+  function renderDetail() {
+    var u = state.selected;
+    if (!u) return;
+    el.emptyDetail.classList.add('hidden');
+    el.detailPanel.classList.remove('hidden');
+    el.refreshUser.classList.remove('hidden');
+    el.detailName.textContent = u.username || '(isimsiz)';
+    el.detailId.textContent = u.user_id;
+    el.detailAvatar.textContent = initial(u.username);
+    el.detailPoints.textContent = num(u.points);
+    el.detailCreated.textContent = dateTime(u.created_at);
+    el.detailSongs.textContent = u.scores_count === null ? 'bilinmiyor' : num(u.scores_count);
+    el.detailIdShort.textContent = shortId(u.user_id);
+
+    // listedeki puanı da tazele
+    state.users.forEach(function (row) {
+      if (row.user_id === u.user_id) row.points = u.points;
+    });
+    renderUsers();
+    refreshQuickState();
+    syncDisabled();
+  }
+
+  function refreshQuickState() {
+    var current = validAmount();
+    var quicks = el.quickRow.querySelectorAll('.quick');
+    for (var i = 0; i < quicks.length; i += 1) {
+      var val = Number(quicks[i].getAttribute('data-quick'));
+      quicks[i].classList.toggle('active', current !== null && current === val);
+    }
+  }
+
+  /* ------------------------------- puan işlemi ---------------------------- */
+  function openPointsModal() {
+    var u = state.selected;
+    var amount = validAmount();
+    if (!u || amount === null || !isAdmin()) return;
+
+    state.pendingAmount = amount;
+    var next = Math.max(0, u.points + amount);
+    el.pointsModalUser.textContent = u.username || u.user_id;
+    el.pointsModalAmount.textContent = (amount > 0 ? '+' : '') + num(amount) + ' puan';
+    el.pointsModalBefore.textContent = num(u.points);
+    el.pointsModalAfter.textContent = num(next);
+    el.pointsModalReason.textContent = el.reason.value.trim() || '—';
+    if (u.points + amount < 0) {
+      el.pointsModalAfter.textContent = '0 (0 tabanına sabitlenir)';
+    }
+    openModal(el.pointsModal);
+    el.pointsConfirm.focus();
+  }
+
+  function applyPoints() {
+    var u = state.selected;
+    var amount = state.pendingAmount;
+    if (!u || amount === null) return;
+
+    beginOp(el.pointsConfirm);
+
+    api('/points', {
+      method: 'POST',
+      body: { user_id: u.user_id, amount: amount, reason: el.reason.value.trim() }
+    }).then(function (data) {
+      closeModal(el.pointsModal);
+      var newPoints = data && data.points !== undefined ? data.points : Math.max(0, u.points + amount);
+      var applied = data && data.applied_amount !== undefined ? data.applied_amount : amount;
+      var clamped = !!(data && data.clamped);
+
+      if (clamped) {
+        toast('info', 'Puan 0 tabanına sabitlendi', [
+          'İstenen: ' + (amount > 0 ? '+' : '') + num(amount) + ' puan',
+          'Uygulanan: ' + (applied > 0 ? '+' : '') + num(applied) + ' puan',
+          'Yeni toplam: ' + num(newPoints)
+        ]);
+      } else {
+        toast('success', (amount > 0 ? '+' : '') + num(amount) + ' puan uygulandı', [
+          (u.username || 'kullanıcı') + ' · yeni toplam: ' + num(newPoints)
+        ]);
+      }
+
+      addLocalLog({
+        action: clamped ? 'set_points' : 'add_points',
+        target_username: u.username,
+        amount: applied,
+        reason: el.reason.value.trim() || null
+      });
+
+      el.amount.value = '';
+      el.reason.value = '';
+      refreshQuickState();
+      el.pointsError.classList.add('hidden');
+
+      // sunucudan yeniden çek
+      return loadUserDetail(u.user_id).then(function () {
+        if (state.tab === 'server') loadServerLogs(true);
+      });
+    }).catch(function (err) {
+      closeModal(el.pointsModal);
+      el.pointsError.textContent = '';
+      var title = document.createElement('strong');
+      title.textContent = 'Puan işlemi uygulanamadı';
+      el.pointsError.appendChild(title);
+      errorLines(err).forEach(function (line) {
+        var span = document.createElement('span');
+        span.className = 'line';
+        span.textContent = line;
+        el.pointsError.appendChild(span);
+      });
+      el.pointsError.classList.remove('hidden');
+      toastError('Puan işlemi başarısız', err);
+    }).then(function () {
+      endOp(el.pointsConfirm, 'Onayla ve uygula');
+    });
+  }
+
+  /* -------------------------------- silme --------------------------------- */
+  function openDeleteModal() {
+    var u = state.selected;
+    if (!u || !isAdmin()) return;
+    el.deleteModalUser.textContent = u.username || '(isimsiz)';
+    el.deleteModalPoints.textContent = num(u.points) + ' puan';
+    el.deleteModalId.textContent = u.user_id;
+    el.deleteExpect.textContent = u.username || '';
+    el.deleteConfirmInput.value = '';
+    el.deleteConfirm.disabled = true;
+    el.deleteHint.textContent = 'Kullanıcı adı birebir eşleşene kadar silme düğmesi kapalı kalır.';
+    el.deleteHint.style.color = '';
+    openModal(el.deleteModal);
+    el.deleteConfirmInput.focus();
+  }
+
+  function deleteUserRequest() {
+    var u = state.selected;
+    if (!u || !isAdmin()) return;
+    if (el.deleteConfirmInput.value.trim() !== String(u.username)) return;
+
+    beginOp(el.deleteConfirm);
+
+    api('/users/' + encodeURIComponent(u.user_id), { method: 'DELETE' })
+      .then(function () {
+        closeModal(el.deleteModal);
+        toast('success', 'Hesap silindi', [
+          (u.username || 'kullanıcı') + ' ve tüm score kayıtları silindi.'
+        ]);
+        addLocalLog({
+          action: 'delete_user',
+          target_username: u.username,
+          amount: null,
+          reason: 'panelden silindi'
+        });
+        state.selected = null;
+        state.selectedId = null;
+        el.detailPanel.classList.add('hidden');
+        el.emptyDetail.classList.remove('hidden');
+        el.refreshUser.classList.add('hidden');
+        el.amount.value = '';
+        el.reason.value = '';
+        return loadUsers().then(function () {
+          if (state.tab === 'server') loadServerLogs(true);
+        });
+      })
+      .catch(function (err) {
+        closeModal(el.deleteModal);
+        toastError('Hesap silinemedi', err);
+      })
+      .then(function () {
+        endOp(el.deleteConfirm, 'Kalıcı olarak sil');
+        updateDeleteConfirmState();
+      });
+  }
+
+  function updateDeleteConfirmState() {
+    var u = state.selected;
+    var ok = !!u && el.deleteConfirmInput.value.trim() === String(u.username || '');
+    el.deleteConfirm.disabled = state.busy > 0 ? true : !ok;
+    if (el.deleteConfirm.getAttribute('data-busy') !== '1') {
+      el.deleteConfirm.disabled = !ok;
+    }
+    if (el.deleteConfirmInput.value.length > 0) {
+      el.deleteHint.textContent = ok ? 'Kullanıcı adı eşleşti. Silme işlemi kalıcıdır.' : 'Yazılan ad kullanıcı adıyla eşleşmiyor.';
+      el.deleteHint.style.color = ok ? '#bff7e0' : '#ffd3d3';
+    } else {
+      el.deleteHint.textContent = 'Kullanıcı adı birebir eşleşene kadar silme düğmesi kapalı kalır.';
+      el.deleteHint.style.color = '';
+    }
+  }
+
+  /* -------------------------------- loglar -------------------------------- */
+  function logLabel(action) {
+    if (action === 'add_points') return 'Puan eklendi';
+    if (action === 'set_points') return 'Puan güncellendi';
+    if (action === 'delete_user') return 'Hesap silindi';
+    return action || 'İşlem';
+  }
+
+  function loadServerLogs(silent) {
+    if (!isAdmin()) {
+      el.serverLogs = [];
+      renderLogs();
+      return Promise.resolve();
+    }
+    state.serverLogsLoading = true;
+    if (!silent) setButtonBusy(el.refreshLogs, true);
+    return api('/admin/logs?limit=50')
+      .then(function (data) {
+        state.serverLogs = (data && data.logs) || [];
+        renderLogs();
+      })
+      .catch(function (err) {
+        el.logState.textContent = 'Sunucu kayıtları alınamadı.';
+        el.logState.classList.remove('hidden');
+        renderLogs();
+        toastError('İşlem geçmişi alınamadı', err);
+      })
+      .then(function () {
+        state.serverLogsLoading = false;
+        setButtonBusy(el.refreshLogs, false);
+      });
+  }
+
+  function readLocalLogs() {
+    var raw = lsGet(LS_LOGS);
+    if (!raw) return [];
+    try {
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.slice(0, MAX_LOCAL_LOGS) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function addLocalLog(entry) {
+    var item = {
+      id: 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      action: entry.action,
+      target_username: entry.target_username || null,
+      amount: entry.amount === null || entry.amount === undefined ? null : Number(entry.amount),
+      reason: entry.reason || null,
+      created_at: new Date().toISOString()
+    };
+    state.localLogs = [item].concat(state.localLogs).slice(0, MAX_LOCAL_LOGS);
+    lsSet(LS_LOGS, JSON.stringify(state.localLogs));
+    renderLogs();
+  }
+
+  function makeLogItem(log) {
+    var li = document.createElement('li');
+    li.className = 'log-item';
+
+    var ico = document.createElement('span');
+    ico.className = 'log-ico ' + (log.action === 'delete_user' ? 'remove' : (log.action === 'set_points' ? 'set' : 'add'));
+    ico.setAttribute('aria-hidden', 'true');
+    ico.textContent = log.action === 'delete_user' ? '🗑' : (log.action === 'set_points' ? '✎' : '+');
+    li.appendChild(ico);
+
+    var main = document.createElement('div');
+    main.className = 'log-main';
+    var title = document.createElement('div');
+    title.className = 'log-title';
+    title.textContent = logLabel(log.action) + ' · ';
+    var who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = log.target_username || '(silinmiş kullanıcı)';
+    title.appendChild(who);
+    if (log.amount !== null && log.amount !== undefined && log.action !== 'delete_user') {
+      var amt = document.createElement('span');
+      amt.className = 'log-amount ' + (Number(log.amount) < 0 ? 'neg' : 'pos');
+      amt.textContent = ' ' + (Number(log.amount) > 0 ? '+' : '') + num(log.amount);
+      title.appendChild(amt);
+    }
+    main.appendChild(title);
+
+    var sub = document.createElement('div');
+    sub.className = 'log-sub';
+    var parts = [];
+    if (log.reason) parts.push('sebep: ' + log.reason);
+    if (log.admin_ip) parts.push('IP: ' + log.admin_ip);
+    if (log.action === 'delete_user' && !log.reason) parts.push('geri alınamaz işlem');
+    sub.textContent = parts.length ? parts.join(' · ') : (log.action === 'delete_user' ? 'geri alınamaz işlem' : 'sebep belirtilmedi');
+    main.appendChild(sub);
+    li.appendChild(main);
+
+    var time = document.createElement('div');
+    time.className = 'log-time';
+    time.textContent = dateTime(log.created_at);
+    li.appendChild(time);
+
+    return li;
+  }
+
+  function renderLogs() {
+    el.logList.textContent = '';
+    var list = state.tab === 'server' ? state.serverLogs : state.localLogs;
+
+    el.tabServer.classList.toggle('active', state.tab === 'server');
+    el.tabLocal.classList.toggle('active', state.tab === 'local');
+    el.tabServer.setAttribute('aria-selected', state.tab === 'server' ? 'true' : 'false');
+    el.tabLocal.setAttribute('aria-selected', state.tab === 'local' ? 'true' : 'false');
+
+    el.clearLocal.style.display = state.tab === 'local' ? 'inline-flex' : 'none';
+    el.logHint.textContent = state.tab === 'server'
+      ? '/admin/logs · son 50 kayıt'
+      : 'tarayıcıda saklanan son ' + MAX_LOCAL_LOGS + ' işlem';
+
+    if (list.length === 0) {
+      el.logState.classList.remove('hidden');
+      if (state.tab === 'server') {
+        el.logState.textContent = isAdmin() ? 'Sunucuda kayıt yok.' : 'Sunucu kayıtları için bağlanın.';
+      } else {
+        el.logState.textContent = 'Bu tarayıcıda henüz işlem yapılmadı.';
+      }
+      return;
+    }
+
+    el.logState.classList.add('hidden');
+    list.forEach(function (log) { el.logList.appendChild(makeLogItem(log)); });
+  }
+
+  function switchTab(tab) {
+    state.tab = tab;
+    renderLogs();
+    if (tab === 'server' && isAdmin() && state.serverLogs.length === 0) {
+      loadServerLogs(false);
+    }
+  }
+
+  /* -------------------------------- modal --------------------------------- */
+  var lastFocused = null;
+  function openModal(node) {
+    lastFocused = document.activeElement;
+    node.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(node) {
+    node.classList.add('hidden');
+    document.body.style.overflow = '';
+    if (lastFocused && lastFocused.focus) {
+      try { lastFocused.focus(); } catch (e) { /* yok say */ }
+    }
+  }
+
+  function closeAllModals() {
+    closeModal(el.pointsModal);
+    closeModal(el.deleteModal);
+  }
+
+  /* ------------------------------- bağlantı ------------------------------- */
+  function persistSettings() {
+    if (MOCK) return;
+    lsSet(LS_SERVER, el.server.value.trim());
+    lsSet(LS_KEY, el.key.value.trim());
+  }
+
+  function connect(button) {
+    var server = normalizeServer(el.server.value);
+    var key = el.key.value.trim();
+
+    if (!MOCK && !server) {
+      toast('error', 'Sunucu adresi gerekli', ['Örn. https://psych-nm.onrender.com']);
+      el.server.focus();
+      return Promise.resolve();
+    }
+
+    el.server.value = MOCK ? 'demo' : server;
+    state.base = MOCK ? '' : server;
+    state.key = key;
+    if (!MOCK) persistSettings();
+    el.apiBaseLabel.textContent = MOCK ? 'demo://mock' : (server || 'aynı origin');
+
+    setConn('busy', 'Bağlanıyor…');
+    beginOp(button, 'Bağlan');
+
+    return api('/health', { auth: false })
+      .then(function (health) {
+        if (health && health.users_table && health.users_table !== 'ok') {
+          toast('info', 'Veritabanı uyarısı', ['users tablosu: ' + health.users_table, 'Migration çalıştırılmış mı? web/README.md']);
+        }
+        if (!key) {
+          setMode('readonly', 'Salt okunur mod: Admin Key girilmedi');
+          toast('info', 'Anahtar girilmedi', ['Panel salt okunur modda açıldı.']);
+          return null;
+        }
+        return api('/users?limit=1').then(function () {
+          setMode('connected');
+          toast('success', 'Bağlantı kuruldu', [MOCK ? 'Demo verisiyle çalışıyorsunuz.' : (server || 'aynı origin')]);
+          return Promise.all([loadUsers(), loadServerLogs(true)]);
+        }).catch(function (err) {
+          setMode('readonly', 'Salt okunur mod');
+          var title = 'Admin anahtarı doğrulanamadı';
+          if (err instanceof ApiError && err.status === 503) {
+            title = 'Sunucuda ADMIN_KEY tanımlı değil';
+          } else if (err instanceof ApiError && err.status === 401) {
+            title = 'Admin anahtarı geçersiz';
+          }
+          showBanner(true, title, errorLines(err));
+          toastError(title, err);
+        });
+      })
+      .catch(function (err) {
+        setMode('offline', { title: 'Sunucuya bağlanılamadı', lines: errorLines(err) });
+        toastError('Sunucuya bağlanılamadı', err);
+      })
+      .then(function () {
+        endOp(button, 'Bağlan');
+        setConn(state.mode === 'connected' ? 'connected' : (state.mode === 'readonly' ? 'readonly' : 'offline'),
+          state.mode === 'connected' ? (MOCK ? 'Bağlı (demo)' : 'Bağlı · tam yetki')
+            : state.mode === 'readonly' ? 'Salt okunur' : 'Bağlantı yok');
+        syncDisabled();
+      });
+  }
+
+  function disconnect() {
+    state.mode = 'offline';
+    state.users = [];
+    state.selected = null;
+    state.selectedId = null;
+    state.serverLogs = [];
+    el.detailPanel.classList.add('hidden');
+    el.emptyDetail.classList.remove('hidden');
+    el.refreshUser.classList.add('hidden');
+    el.amount.value = '';
+    el.reason.value = '';
+    el.pointsError.classList.add('hidden');
+    renderUsers();
+    renderLogs();
+    setMode('offline');
+    showBanner(false, 'Bağlantı kesildi', ['Yeniden bağlanmak için “Bağlan” düğmesini kullanın.']);
+    syncDisabled();
+    toast('info', 'Bağlantı kesildi', ['Ayarlar tarayıcıda saklı kaldı.']);
+  }
+
+  /* -------------------------------- olaylar -------------------------------- */
+  el.settingsForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    connect(el.connectBtn);
+  });
+
+  el.disconnectBtn.addEventListener('click', function () { disconnect(); });
+
+  el.toggleKey.addEventListener('click', function () {
+    var showing = el.key.type === 'text';
+    el.key.type = showing ? 'password' : 'text';
+    el.toggleKey.textContent = showing ? '👁' : '🙈';
+    el.toggleKey.setAttribute('aria-label', showing ? 'Anahtarı göster' : 'Anahtarı gizle');
+  });
+
+  el.server.addEventListener('change', persistSettings);
+  el.key.addEventListener('change', persistSettings);
+
+  el.userSearch.addEventListener('input', function () {
+    if (state.searchTimer) window.clearTimeout(state.searchTimer);
+    state.searchTimer = window.setTimeout(function () {
+      loadUsers();
+    }, SEARCH_DEBOUNCE);
+  });
+
+  el.refreshUsers.addEventListener('click', function () { loadUsers(); });
+
+  el.refreshUser.addEventListener('click', function () {
+    if (state.selectedId) loadUserDetail(state.selectedId);
+  });
+
+  el.refreshLogs.addEventListener('click', function () {
+    if (state.tab === 'local') { switchTab('server'); return; }
+    loadServerLogs(false);
+  });
+
+  el.tabServer.addEventListener('click', function () { switchTab('server'); });
+  el.tabLocal.addEventListener('click', function () { switchTab('local'); });
+
+  el.clearLocal.addEventListener('click', function () {
+    state.localLogs = [];
+    lsDel(LS_LOGS);
+    renderLogs();
+    toast('info', 'Yerel geçmiş temizlendi', ['Sunucu kayıtları silinmedi.']);
+  });
+
+  el.amount.addEventListener('input', function () {
+    refreshQuickState();
+    syncDisabled();
+  });
+
+  el.quickRow.addEventListener('click', function (event) {
+    var btn = event.target.closest('.quick');
+    if (!btn || btn.disabled) return;
+    el.amount.value = btn.getAttribute('data-quick');
+    refreshQuickState();
+    syncDisabled();
+    el.reason.focus();
+  });
+
+  el.applyPoints.addEventListener('click', function () {
+    if (!validAmount() || !isAdmin() || !state.selected) return;
+    openPointsModal();
+  });
+
+  el.pointsConfirm.addEventListener('click', applyPoints);
+
+  el.deleteUser.addEventListener('click', openDeleteModal);
+  el.deleteConfirmInput.addEventListener('input', updateDeleteConfirmState);
+  el.deleteConfirmInput.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (!el.deleteConfirm.disabled) deleteUserRequest();
+    }
+  });
+  el.deleteConfirm.addEventListener('click', deleteUserRequest);
+
+  document.addEventListener('click', function (event) {
+    var closer = event.target.closest('[data-close]');
+    if (!closer) return;
+    var which = closer.getAttribute('data-close');
+    if (which === 'points') closeModal(el.pointsModal);
+    if (which === 'delete') closeModal(el.deleteModal);
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.overlay'), function (overlay) {
+    overlay.addEventListener('mousedown', function (event) {
+      if (event.target === overlay) closeModal(overlay);
+    });
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeAllModals();
+  });
+
+  /* --------------------------------- başlat -------------------------------- */
+  function boot() {
+    state.localLogs = readLocalLogs();
+
+    if (MOCK) {
+      el.mockChip.classList.remove('hidden');
+      el.server.value = 'demo';
+      el.key.value = 'demo-key';
+      el.apiBaseLabel.textContent = 'demo://mock';
+      el.settingsHint.textContent = 'Demo modu (?mock=1): ağ isteği yapılmaz, tüm işlemler tarayıcı belleğinde simüle edilir.';
+      el.connectBtn.querySelector('span:last-child').textContent = 'Demo bağlantısı';
+      var mockLink = el.boardLink.getAttribute('href');
+      el.boardLink.setAttribute('href', mockLink + '?mock=1');
+      renderLogs();
+      connect(el.connectBtn);
+      return;
+    }
+
+    var savedServer = lsGet(LS_SERVER) || DEFAULT_API;
+    var savedKey = lsGet(LS_KEY) || '';
+    el.server.value = savedServer;
+    el.key.value = savedKey;
+    el.apiBaseLabel.textContent = savedServer || 'aynı origin';
+    renderLogs();
+    renderUsers();
+    syncDisabled();
+
+    if (savedKey) {
+      connect(el.connectBtn);
+    } else {
+      setMode('offline');
+      showBanner(false, 'Bağlantı bekleniyor', [
+        'Sunucu adresi ve Admin Key girip “Bağlan”a basın.',
+        'Anahtar yalnızca bu tarayıcıda saklanır; koda gömülü değildir.'
+      ]);
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
